@@ -1,0 +1,11 @@
+# 编译生成的可执行文件
+codec/codec_service
+
+# 测试生成的视频
+codec/output.h264
+
+# C/C++编译中间文件
+*.o
+
+# 日志文件
+*.log
