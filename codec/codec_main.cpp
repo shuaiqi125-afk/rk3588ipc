@@ -1,4 +1,5 @@
 #include "codec_camera.h"
+#include "codec_bsp_client.h"
 
 #include<cstdio>
 #include<csignal>
@@ -22,14 +23,14 @@ int main()
 {
     //1.注册ctrl+c处理函数
     signal(SIGINT,signal_handler);
-    //2.设置第一版codec参数（先在main中设置，以后写到bsp中）
-    CodecCameraConfig config{};
-    config.device = "/dev/video0";
-    config.width = 1920;
-    config.height = 1080;
-    config.fps = 30;
-    config.bitrate = 4000000;
-    //3.创建CodecCamera运行山下文
+    //从bsp获取codec配置
+    CodecConfig config {};
+    if(!get_codec_config_from_bsp(config ))
+    {
+        cerr << "从BSP获取CODEC配置失败" << endl;
+        return -1;
+    }
+    //3.根据bsp配置初始化codec
     CodecCamera camera{};
     //4.初始化摄像头链
     if(init_codec_camera(camera,config) < 0)

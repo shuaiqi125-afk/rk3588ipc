@@ -9,3 +9,11 @@ codec/output.h264
 
 # 日志文件
 *.log
+
+
+# 根目录编译生成的程序
+/bsp_service
+/codec_service
+
+# 测试生成的视频
+/output.h264

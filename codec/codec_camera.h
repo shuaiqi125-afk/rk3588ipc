@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "../common/codec_config.h"
 
 extern "C"
 {
@@ -9,16 +10,7 @@ extern "C"
 }
 using namespace std;
 
-//摄像头及编码参数
-struct CodecCameraConfig
-{
-    string device;
-    int width;
-    int height;
-    int fps;
-    int bitrate;
 
-};
 //摄像头媒体处理上下文
 struct CodecCamera
 {
@@ -42,7 +34,7 @@ struct CodecCamera
     int64_t next_pts = 0;
 };
 
-int init_codec_camera(CodecCamera& camera,const CodecCameraConfig& config);
+int init_codec_camera(CodecCamera& camera,const CodecConfig& config);
 int get_h264_packet(CodecCamera& camera,AVPacket* output_packet);
 void cleanup_codec_camera(CodecCamera& camera);
 

@@ -18,7 +18,7 @@ static string ffmpeg_error_string(int errnum)
     return string(errbuf);
 }
 
-static int open_camera(CodecCamera& camera,const CodecCameraConfig& config)
+static int open_camera(CodecCamera& camera,const CodecConfig& config)
 {
     //1.注册ffmpeg设备
     avdevice_register_all();
@@ -112,7 +112,7 @@ static int init_decoder(CodecCamera& camera)
     return 0;
 }
 
-static int init_encoder(CodecCamera& camera,const CodecCameraConfig& config)
+static int init_encoder(CodecCamera& camera,const CodecConfig& config)
 {
     //1.寻找h264编码器
     const AVCodec* encoder = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -307,7 +307,7 @@ int get_h264_packet(CodecCamera& camera,AVPacket* output_packet)
 }
 
 //初始化整个摄像头codec处理链
-int init_codec_camera(CodecCamera& camera,const CodecCameraConfig& config)
+int init_codec_camera(CodecCamera& camera,const CodecConfig& config)
 {
     //1.打开摄像头
     if(open_camera(camera,config) < 0)
