@@ -17,3 +17,6 @@ codec/output.h264
 
 # 测试生成的视频
 /output.h264
+/fd_transfer_test
+/frame_ipc_test
+/rtsp_service
