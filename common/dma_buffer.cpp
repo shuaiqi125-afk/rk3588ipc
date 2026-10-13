@@ -62,10 +62,10 @@ bool allocate_dma_buffer(const string& heap_path,size_t size,DmaBuffer& buffer)
         buffer.addr = nullptr;
         return false;
     }
-    cout << "dma-buf 申请成功" << endl;
-    cout << "fd:" << buffer.fd << endl;
-    cout << "size:" << buffer.size << endl;
-    cout << "addr:" << buffer.addr <<endl;
+    // cout << "dma-buf 申请成功" << endl;
+    // cout << "fd:" << buffer.fd << endl;
+    // cout << "size:" << buffer.size << endl;
+    // cout << "addr:" << buffer.addr <<endl;
     return true;
 }
 

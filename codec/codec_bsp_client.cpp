@@ -135,6 +135,24 @@ static bool parse_config_line(const string& line,CodecConfig& config)
             return false;
         }
     }
+    else if(key == "frame_buffer_count")
+    {
+        int number = 0;
+        if(!string_to_int(value,number) || number <= 0)
+        {
+            return false;
+        }
+        config.frame_buffer_count = static_cast<uint32_t>(number);
+    }
+    else if(key == "frame_buffer_capacity")
+    {
+        int number =0 ;
+        if(!string_to_int(value,number)||number<=0)
+        {
+            return false;
+        }
+        config.frame_buffer_capacity = static_cast<size_t>(number);
+    }
     else
     {
         return false;

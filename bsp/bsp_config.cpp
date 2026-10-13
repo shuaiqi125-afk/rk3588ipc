@@ -47,6 +47,8 @@ void set_default_codec_config(CodecConfig& config)
     config.height = 1080;
     config.fps = 30;
     config.bitrate = 4000000;
+    config.frame_buffer_count = 8;
+    config.frame_buffer_capacity = 2*1024*1024;
 }
 //检查codec配置是否合法
 bool validate_codec_config(const CodecConfig& config)
@@ -81,6 +83,16 @@ bool validate_codec_config(const CodecConfig& config)
     if(config.bitrate <= 0)
     {
         cerr << "codec配置错误:bitrate必须大于零" << endl;
+        return false;
+    }
+    if(config.frame_buffer_count == 0)
+    {
+        cerr << "codec配置错误:" <<"frame_buffer_count必须大于0"<<endl;
+        return false;
+    }
+    if(config.frame_buffer_capacity == 0)
+    {
+        cerr <<"codec配置错误:" <<"frame_buffer_capacity必须大于0"<<endl;
         return false;
     }
     return true;
@@ -174,6 +186,26 @@ bool load_codec_config(const string& path,CodecConfig& config)
             }
             temp_config.bitrate = number;
         }
+        else if(key == "frame_buffer_count")
+        {
+            int number = 0;
+            if(!string_to_int(value,number)||number<=0)
+            {
+                cerr <<"配置文件第"<<line_number<<"行frame_buffer_count不是有效整数"<<endl;
+                return false;
+            }
+            temp_config.frame_buffer_count = static_cast<uint32_t>(number);
+        }
+        else if(key == "frame_buffer_capacity")
+        {
+            int number = 0;
+            if(!string_to_int(value,number)||number<=0)
+            {
+                cerr << "配置文件第" <<line_number<<"行frame_buffer_capacity不是有效整数"<<endl;
+                return false;
+            }
+            temp_config.frame_buffer_capacity = static_cast<size_t>(number);
+        }
         else
         {
             cerr << "位置codec配置项" << key << endl;
@@ -212,6 +244,8 @@ bool save_codec_config(const string& path,const CodecConfig& config)
     file << "height=" << config.height << '\n';
     file << "fps=" << config.fps << '\n';
     file << "bitrate=" << config.bitrate << '\n';
+    file << "frame_buffer_capacity=" <<config.frame_buffer_count <<'\n';
+    file << "frame_buffer_capacity=" << config.frame_buffer_capacity << '\n';
     //4.确认写入没有发生故障
     if(!file.good())
     {

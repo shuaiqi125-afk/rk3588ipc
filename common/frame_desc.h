@@ -20,6 +20,12 @@ enum FrameFlags : uint32_t
 //一帧媒体数据的描述信息，里边不保存h264数据，只负责描述 这块dma-buf 里面装的是什么东西
 struct FrameDesc
 {
+    //去buffer pool里的哪一块找数据
+    uint32_t buffer_id = 0;
+    //摄像头/视频通道编号
+    uint32_t channel_id =0;
+    //码流编号 如:0=主码流 1=子码流
+    uint32_t stream_id = 0;
     //编码格式 比如：h264
     uint32_t codec = 0;
     //当前帧实际有效数据大小 如：packet->size = 82345

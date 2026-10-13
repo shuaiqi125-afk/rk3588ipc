@@ -1,10 +1,15 @@
 #include "codec_camera.h"
 #include "codec_bsp_client.h"
+#include "codec_frame_sender.h"
 
-#include<cstdio>
-#include<csignal>
-#include<cstdint>
-#include<iostream>
+#include "../common/frame_buffer_pool.h"
+
+#include <cstdio>
+#include <csignal>
+#include <cstdint>
+#include <iostream>
+
+using namespace std;
 
 //程序运行标志 ctrl+c时会变成0 让while循环正常退出
 static volatile sig_atomic_t running = 1;
@@ -32,70 +37,95 @@ int main()
     }
     //3.根据bsp配置初始化codec
     CodecCamera camera{};
-    //4.初始化摄像头链
     if(init_codec_camera(camera,config) < 0)
     {
         cerr << "CodecCamera初始化失败"  << endl;
         return -1;
     }
-    //5.创建H264输出packet
+    //4.准备dma-buf pool配置
+    FrameBufferPoolConfig pool_config{};
+    pool_config.buffer_count = config.frame_buffer_count;
+    pool_config.buffer_capacity = config.frame_buffer_capacity;
+    //5.创建并初始化dma-buf pool
+    FrameBufferPool pool{};
+    if(!init_frame_buffer_pool(pool,pool_config))
+    {
+        cerr << "初始化FrameBufferPool失败" << endl;
+        cleanup_codec_camera(camera);
+        return -1;
+    }
+    //6.连接rtsps
+    int rtsp_socket_fd = connect_frame_receiver();
+    if(rtsp_socket_fd<0)
+    {
+        cerr << "CODEC连接RTSPS失败" << endl;
+        release_frame_buffer_pool(pool);
+        cleanup_codec_camera(camera);
+        return -1;
+    }
+    //7.把整个dma-buf pool 注册给rtsps
+    if(!register_frame_buffer_pool(rtsp_socket_fd,pool))
+    {
+        cerr << "注册FrameBufferPool到RTSPS失败" << endl;
+        close_frame_sender(rtsp_socket_fd);
+        release_frame_buffer_pool(pool);
+        cleanup_codec_camera(camera);
+        return -1;
+    }
+    //8.创建H264输出packet
     AVPacket* output_packet = av_packet_alloc();
     if(!output_packet)
     {
-        cerr << "创建h264输出packet失败" << endl;
+        cerr << "创建H264输出packet失败" << endl;
+        close_frame_sender(rtsp_socket_fd);
+        release_frame_buffer_pool(pool);
         cleanup_codec_camera(camera);
         return -1;
     }
-    //6.创建h264输出文件
-    FILE* output_file = fopen("output.h264","wb");
-    if(!output_file)
-    {
-        cerr << "创建output.h264文件失败" << endl;
-        av_packet_free(&output_packet);
-        cleanup_codec_camera(camera);
-        return -1;
-    }
-    cout << "codec开始运行" <<endl;
+    cout << "CODEC开始运行" << endl;
     cout << "按ctrl+c停止" << endl;
-    //7.统计已经输出多少个h264 packet
+    //9.H264 packet序列号
     uint64_t packet_count = 0;
-    //8.codec主循环
+    //10.codec主循环
     while(running)
     {
+        //从摄像头读取MJPEG解码格式转换H264编码最终h264放进output_packet
         int ret = get_h264_packet(camera,output_packet);
-        if(ret< 0)
+        if(ret < 0)
         {
-            cerr << "获取h264packet 失败" << endl;
+            cerr << "获取H264 packet失败" << endl;
             break;
         }
-        if(ret == 0)
+        //当前还没有产生H264 packet
+        if(ret < 0)
         {
             continue;
         }
-        //9.得到h264 packet
-        size_t written = fwrite(output_packet->data,1,output_packet->size,output_file);
-        if(written != static_cast<size_t>(output_packet->size))
+        //11.把真实H264packet 放进dma-buf pool 然后发送FRAME_READY给RTSPS
+        if(!send_h264_packet(rtsp_socket_fd,pool,output_packet,packet_count,0,0))
         {
-            cerr << "写入output.h264失败" << endl;
+            cerr << "发送H264 packet 到RTSPS失败" << endl;
+            av_packet_unref(output_packet);
             break;
         }
-        packet_count++;
-        //10.每30个packet打印一下状态
-        if(packet_count % 30 == 0)
+        //12.每300个packet打印一次
+        if(packet_count %300 == 0)
         {
-            cout << "已经编码" << packet_count<<"个h264 packet" << endl;
+            cout << "已经处理" << packet_count<< "个H264 packet" << endl;
         }
-        //11.释放
+        //13.当前packet处理完成AVPacket结构本身继续复用
         av_packet_unref(output_packet);
+        //14.进入下一帧
+        packet_count++;
     }
-    //12.刷新并关闭h264文件
-    fflush(output_file);
-    fclose(output_file);
-    output_file = nullptr;
-    //13.释放h264输出packet
+    //15.释放H264输出packet
     av_packet_free(&output_packet);
-    //14.释放摄像头codec全部资源
+    //16.关闭CODEC -> RTSPS连接
+    close_frame_sender(rtsp_socket_fd);
+    //17.释放整个dma-buf pool
+    release_frame_buffer_pool(pool);
+    //18.释放摄像头和编解码资源
     cleanup_codec_camera(camera);
-    cout << "codec已经退出" << endl;
+    cout << "CODEC已经退出" <<endl;
     return 0;
 }

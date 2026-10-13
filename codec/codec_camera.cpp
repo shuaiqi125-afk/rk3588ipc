@@ -261,7 +261,7 @@ int get_h264_packet(CodecCamera& camera,AVPacket* output_packet)
         {
             return -1;
         }
-        ret = av_frame_make_writable(camera.encoder_frame);
+        ret = av_frame_make_writable(camera.encoder_frame);//确保参数可以被安全修改
         if(ret < 0)
         {
             cerr << "encoder_frame不可写:" << ffmpeg_error_string(ret) <<endl;

@@ -78,6 +78,8 @@ static string serialize_codec_config(const CodecConfig& config)
     stream << "height=" << config.height << '\n';
     stream << "fps=" << config.fps << '\n';
     stream << "bitrate=" << config.bitrate << '\n';
+    stream << "frame_buffer_count=" << config.frame_buffer_count << '\n';
+    stream << "frame_buffer_capacity=" << config.frame_buffer_capacity <<'\n';
     stream << "END" << '\n';
     return stream.str();
 }
